@@ -4,9 +4,9 @@ Bluesound.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/media_player.bluesound/
 """
+import asyncio
 from asyncio.futures import CancelledError
 from datetime import timedelta
-import asyncio
 import logging
 
 import aiohttp
@@ -14,21 +14,22 @@ from aiohttp.client_exceptions import ClientError
 import async_timeout
 import voluptuous as vol
 
-import homeassistant.helpers.config_validation as cv
-import homeassistant.util.dt as dt_util
-from homeassistant.core import callback
 from homeassistant.components.media_player import (
-    SUPPORT_NEXT_TRACK, SUPPORT_PAUSE, SUPPORT_PREVIOUS_TRACK, SUPPORT_SEEK,
-    SUPPORT_PLAY_MEDIA, SUPPORT_VOLUME_MUTE, SUPPORT_VOLUME_SET, SUPPORT_STOP,
-    SUPPORT_PLAY, MediaPlayerDevice, PLATFORM_SCHEMA, MEDIA_TYPE_MUSIC,
-    SUPPORT_CLEAR_PLAYLIST, SUPPORT_SELECT_SOURCE, SUPPORT_VOLUME_STEP)
+    SUPPORT_PLAY, SUPPORT_SEEK, SUPPORT_STOP, SUPPORT_PAUSE, PLATFORM_SCHEMA,
+    MEDIA_TYPE_MUSIC, SUPPORT_NEXT_TRACK, SUPPORT_PLAY_MEDIA,
+    SUPPORT_VOLUME_SET, SUPPORT_VOLUME_MUTE, SUPPORT_VOLUME_STEP,
+    SUPPORT_SELECT_SOURCE, SUPPORT_CLEAR_PLAYLIST, SUPPORT_PREVIOUS_TRACK,
+    MediaPlayerDevice)
 from homeassistant.const import (
-    EVENT_HOMEASSISTANT_START, EVENT_HOMEASSISTANT_STOP, CONF_NAME, CONF_PORT,
-    STATE_PLAYING, STATE_PAUSED, STATE_IDLE, CONF_HOSTS, CONF_HOST,
-    HTTP_HEADER_CONNECTION, KEEP_ALIVE)
+    CONF_HOST, CONF_NAME, CONF_PORT, CONF_HOSTS, KEEP_ALIVE, STATE_IDLE,
+    STATE_PAUSED, STATE_PLAYING, HTTP_HEADER_CONNECTION,
+    EVENT_HOMEASSISTANT_STOP, EVENT_HOMEASSISTANT_START)
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import Throttle
+import homeassistant.util.dt as dt_util
 
 REQUIREMENTS = ['xmltodict==0.11.0']
 
