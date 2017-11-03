@@ -10,21 +10,23 @@ import logging
 import requests
 import voluptuous as vol
 
-from homeassistant.components.binary_sensor \
-    import (BinarySensorDevice, PLATFORM_SCHEMA)
-from homeassistant.const import (CONF_NAME)
-import homeassistant.helpers.config_validation as cv
+from homeassistant.components.binary_sensor import (
+    BinarySensorDevice, PLATFORM_SCHEMA)
+from homeassistant.const import CONF_NAME, HTTP_HEADER_USER_AGENT
 from homeassistant.util import Throttle
-
-CONF_THRESHOLD = "forecast_threshold"
+import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_THRESHOLD = 'forecast_threshold'
+
 DEFAULT_NAME = 'Aurora Visibility'
-DEFAULT_DEVICE_CLASS = "visible"
+DEFAULT_DEVICE_CLASS = 'visible'
 DEFAULT_THRESHOLD = 75
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=5)
+
+URL = "http://services.swpc.noaa.gov/text/aurora-nowcast-map.txt"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
@@ -85,8 +87,8 @@ class AuroraSensor(BinarySensorDevice):
         attrs = {}
 
         if self.aurora_data:
-            attrs["visibility_level"] = self.aurora_data.visibility_level
-            attrs["message"] = self.aurora_data.is_visible_text
+            attrs['visibility_level'] = self.aurora_data.visibility_level
+            attrs['message'] = self.aurora_data.is_visible_text
 
         return attrs
 
@@ -104,10 +106,9 @@ class AuroraData(object):
         self.longitude = longitude
         self.number_of_latitude_intervals = 513
         self.number_of_longitude_intervals = 1024
-        self.api_url = \
-            "http://services.swpc.noaa.gov/text/aurora-nowcast-map.txt"
-        self.headers = {"User-Agent": "Home Assistant Aurora Tracker v.0.1.0"}
-
+        self.headers = {
+            HTTP_HEADER_USER_AGENT: "Home Assistant Aurora Tracker v.0.1.0",
+        }
         self.threshold = int(threshold)
         self.is_visible = None
         self.is_visible_text = None
@@ -132,14 +133,14 @@ class AuroraData(object):
 
     def get_aurora_forecast(self):
         """Get forecast data and parse for given long/lat."""
-        raw_data = requests.get(self.api_url, headers=self.headers).text
+        raw_data = requests.get(URL, headers=self.headers, timeout=5).text
         forecast_table = [
             row.strip(" ").split("   ")
             for row in raw_data.split("\n")
             if not row.startswith("#")
         ]
 
-        # convert lat and long for data points in table
+        # Convert lat and long for data points in table
         converted_latitude = round((self.latitude / 180)
                                    * self.number_of_latitude_intervals)
         converted_longitude = round((self.longitude / 360)

@@ -14,9 +14,10 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.device_tracker import (
     DOMAIN, PLATFORM_SCHEMA, DeviceScanner)
-from homeassistant.const import CONF_HOST
+from homeassistant.const import (
+    CONF_HOST, HTTP_HEADER_USER_AGENT, HTTP_HEADER_X_REQUESTED_WITH,
+    HTTP_HEADER_REFERER)
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
 
 REQUIREMENTS = ['defusedxml==0.5.0']
 
@@ -52,11 +53,11 @@ class UPCDeviceScanner(DeviceScanner):
         self.token = None
 
         self.headers = {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Referer': "http://{}/index.html".format(self.host),
-            'User-Agent': ("Mozilla/5.0 (Windows NT 10.0; WOW64) "
-                           "AppleWebKit/537.36 (KHTML, like Gecko) "
-                           "Chrome/47.0.2526.106 Safari/537.36")
+            HTTP_HEADER_X_REQUESTED_WITH: 'XMLHttpRequest',
+            HTTP_HEADER_REFERER: "http://{}/index.html".format(self.host),
+            HTTP_HEADER_USER_AGENT: ("Mozilla/5.0 (Windows NT 10.0; WOW64) "
+                                     "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                     "Chrome/47.0.2526.106 Safari/537.36")
         }
 
         self.websession = async_get_clientsession(hass)

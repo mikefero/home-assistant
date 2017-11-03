@@ -15,7 +15,8 @@ from homeassistant.components.telegram_bot import (
     CONF_ALLOWED_CHAT_IDS, BaseTelegramBotEntity,
     PLATFORM_SCHEMA as TELEGRAM_PLATFORM_SCHEMA)
 from homeassistant.const import (
-    EVENT_HOMEASSISTANT_START, EVENT_HOMEASSISTANT_STOP, CONF_API_KEY)
+    EVENT_HOMEASSISTANT_START, EVENT_HOMEASSISTANT_STOP, CONF_API_KEY,
+    HTTP_HEADER_CONNECTION, KEEP_ALIVE)
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -41,14 +42,8 @@ def async_setup_platform(hass, config):
         """Stop the bot."""
         pol.stop_polling()
 
-    hass.bus.async_listen_once(
-        EVENT_HOMEASSISTANT_START,
-        _start_bot
-    )
-    hass.bus.async_listen_once(
-        EVENT_HOMEASSISTANT_STOP,
-        _stop_bot
-    )
+    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, _start_bot)
+    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _stop_bot)
 
     return True
 
@@ -87,7 +82,7 @@ class TelegramPoll(BaseTelegramBotEntity):
             with async_timeout.timeout(self.timeout, loop=self.hass.loop):
                 resp = yield from self.websession.post(
                     self.update_url, data=self.post_data,
-                    headers={'connection': 'keep-alive'}
+                    headers={HTTP_HEADER_CONNECTION: KEEP_ALIVE}
                 )
             if resp.status == 200:
                 _json = yield from resp.json()

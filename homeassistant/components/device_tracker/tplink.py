@@ -16,9 +16,15 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.device_tracker import (
     DOMAIN, PLATFORM_SCHEMA, DeviceScanner)
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import (
+    CONF_HOST, CONF_PASSWORD, CONF_USERNAME, HTTP_HEADER_USER_AGENT,
+    HTTP_HEADER_REFERER, HTTP_HEADER_CACHE_CONTROL, HTTP_HEADER_CONTENT_TYPE,
+    HTTP_HEADER_X_REQUESTED_WITH, HTTP_HEADER_ACCEPT, NO_CACHE, KEEP_ALIVE,
+    HTTP_HEADER_ACCEPT_ENCODING, HTTP_HEADER_CONNECTION)
 
 _LOGGER = logging.getLogger(__name__)
+
+HTTP_HEADER_PRAGMA = 'Pragma'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
@@ -78,7 +84,7 @@ class TplinkDeviceScanner(DeviceScanner):
         referer = 'http://{}'.format(self.host)
         page = requests.get(
             url, auth=(self.username, self.password),
-            headers={'referer': referer}, timeout=4)
+            headers={HTTP_HEADER_REFERER: referer}, timeout=4)
 
         result = self.parse_macs.findall(page.text)
 
@@ -123,7 +129,7 @@ class Tplink2DeviceScanner(TplinkDeviceScanner):
             .format(b64_encoded_username_password)
 
         response = requests.post(
-            url, headers={'referer': referer, 'cookie': cookie},
+            url, headers={HTTP_HEADER_REFERER: referer, 'cookie': cookie},
             timeout=4)
 
         try:
@@ -174,11 +180,11 @@ class Tplink3DeviceScanner(TplinkDeviceScanner):
             .format(self.host)
         referer = 'http://{}/webpages/login.html'.format(self.host)
 
-        # If possible implement rsa encryption of password here.
+        # If possible implement RSA encryption of password here.
         response = requests.post(
             url, params={'operation': 'login', 'username': self.username,
                          'password': self.password},
-            headers={'referer': referer}, timeout=4)
+            headers={HTTP_HEADER_REFERER: referer}, timeout=4)
 
         try:
             self.stok = response.json().get('data').get('stok')
@@ -209,7 +215,7 @@ class Tplink3DeviceScanner(TplinkDeviceScanner):
 
         response = requests.post(url,
                                  params={'operation': 'load'},
-                                 headers={'referer': referer},
+                                 headers={HTTP_HEADER_REFERER: referer},
                                  cookies={'sysauth': self.sysauth},
                                  timeout=5)
 
@@ -250,7 +256,7 @@ class Tplink3DeviceScanner(TplinkDeviceScanner):
 
         requests.post(url,
                       params={'operation': 'write'},
-                      headers={'referer': referer},
+                      headers={HTTP_HEADER_REFERER: referer},
                       cookies={'sysauth': self.sysauth})
         self.stok = ''
         self.sysauth = ''
@@ -327,7 +333,7 @@ class Tplink4DeviceScanner(TplinkDeviceScanner):
 
             page = requests.get(url, headers={
                 'cookie': cookie,
-                'referer': referer
+                HTTP_HEADER_REFERER: referer
             })
             mac_results.extend(self.parse_macs.findall(page.text))
 
@@ -361,18 +367,20 @@ class Tplink5DeviceScanner(TplinkDeviceScanner):
         base_url = 'http://{}'.format(self.host)
 
         header = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12;"
-                          " rv:53.0) Gecko/20100101 Firefox/53.0",
-            "Accept": "application/json, text/javascript, */*; q=0.01",
+            HTTP_HEADER_USER_AGENT:
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12;"
+                " rv:53.0) Gecko/20100101 Firefox/53.0",
+            HTTP_HEADER_ACCEPT:
+                "application/json, text/javascript, */*; q=0.01",
             "Accept-Language": "Accept-Language: en-US,en;q=0.5",
-            "Accept-Encoding": "gzip, deflate",
-            "Content-Type": "application/x-www-form-urlencoded; "
-                            "charset=UTF-8",
-            "X-Requested-With": "XMLHttpRequest",
-            "Referer": "http://" + self.host + "/",
-            "Connection": "keep-alive",
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache"
+            HTTP_HEADER_ACCEPT_ENCODING: "gzip, deflate",
+            HTTP_HEADER_CONTENT_TYPE: "application/x-www-form-urlencoded; "
+                                      "charset=UTF-8",
+            HTTP_HEADER_X_REQUESTED_WITH: "XMLHttpRequest",
+            HTTP_HEADER_REFERER: "http://{}/".format(self.host),
+            HTTP_HEADER_CONNECTION: KEEP_ALIVE,
+            HTTP_HEADER_PRAGMA: NO_CACHE,
+            HTTP_HEADER_CACHE_CONTROL: NO_CACHE,
         }
 
         password_md5 = hashlib.md5(
@@ -393,12 +401,11 @@ class Tplink5DeviceScanner(TplinkDeviceScanner):
 
         get_params = {
             'operation': 'load',
-            '_': timestamp
+            '_': timestamp,
         }
 
-        response = session.get(client_list_url,
-                               headers=header,
-                               params=get_params)
+        response = session.get(
+            client_list_url, headers=header, params=get_params)
         session.close()
         try:
             list_of_devices = response.json()

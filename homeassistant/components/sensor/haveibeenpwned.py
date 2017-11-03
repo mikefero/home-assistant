@@ -4,19 +4,19 @@ Support for haveibeenpwned (email breaches) sensor.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.haveibeenpwned/
 """
-from datetime import timedelta
 import logging
+from datetime import timedelta
 
-import voluptuous as vol
 import requests
+import voluptuous as vol
 
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import (STATE_UNKNOWN, CONF_EMAIL)
-from homeassistant.helpers.entity import Entity
 import homeassistant.helpers.config_validation as cv
-from homeassistant.util import Throttle
 import homeassistant.util.dt as dt_util
+from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant.const import CONF_EMAIL, HTTP_HEADER_USER_AGENT
+from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import track_point_in_time
+from homeassistant.util import Throttle
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 # pylint: disable=unused-argument
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    """Set up the HaveIBeenPwnedSensor sensor."""
+    """Set up the HaveIBeenPwned sensor."""
     emails = config.get(CONF_EMAIL)
     data = HaveIBeenPwnedData(emails)
 
@@ -54,7 +54,7 @@ class HaveIBeenPwnedSensor(Entity):
 
     def __init__(self, data, hass, email):
         """Initialize the HaveIBeenPwnedSensor sensor."""
-        self._state = STATE_UNKNOWN
+        self._state = None
         self._data = data
         self._hass = hass
         self._email = email
@@ -77,7 +77,7 @@ class HaveIBeenPwnedSensor(Entity):
 
     @property
     def device_state_attributes(self):
-        """Return the atrributes of the sensor."""
+        """Return the attributes of the sensor."""
         val = {}
         if self._email not in self._data.data:
             return val
@@ -148,8 +148,9 @@ class HaveIBeenPwnedData(object):
 
             _LOGGER.info("Checking for breaches for email %s", self._email)
 
-            req = requests.get(url, headers={"User-agent": USER_AGENT},
-                               allow_redirects=True, timeout=5)
+            req = requests.get(
+                url, headers={HTTP_HEADER_USER_AGENT: USER_AGENT},
+                allow_redirects=True, timeout=5)
 
         except requests.exceptions.RequestException:
             _LOGGER.error("Failed fetching HaveIBeenPwned Data for %s",

@@ -22,7 +22,7 @@ from homeassistant.components.weather import (
     ATTR_WEATHER_WIND_SPEED)
 from homeassistant.const import (
     CONF_MONITORED_CONDITIONS, CONF_NAME, __version__,
-    CONF_LATITUDE, CONF_LONGITUDE)
+    CONF_LATITUDE, CONF_LONGITUDE, HTTP_HEADER_USER_AGENT)
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 
@@ -36,7 +36,6 @@ CONF_STATION_ID = 'station_id'
 
 DEFAULT_NAME = 'zamg'
 
-# Data source updates once per hour, so we do nothing if it's been less time
 MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=10)
 
 SENSOR_TYPES = {
@@ -138,7 +137,8 @@ class ZamgData(object):
 
     API_URL = 'http://www.zamg.ac.at/ogd/'
     API_HEADERS = {
-        'User-Agent': '{} {}'.format('home-assistant.zamg/', __version__),
+        HTTP_HEADER_USER_AGENT: '{} {}'.format(
+            'home-assistant.zamg/', __version__),
     }
 
     def __init__(self, station_id):
